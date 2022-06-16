@@ -77,3 +77,18 @@ def graph_heatmap(df):
     heatmap_dataframe = pd.DataFrame(heatmap_data)
     fig = px.imshow(heatmap_dataframe, text_auto=True)
     fig.show()
+
+def plot_scatter(df, x, y):
+    """
+    Generate Pyplot scatter plot from Pandas dataframe
+    :param df: Pandas dataframe
+    :param x: x axis column
+    :param y: y axis column
+    :return: None
+    """
+    x_data = getattr(df, x)
+    y_data = getattr(df, y)
+    plt.scatter(x_data, y_data, color = 'blue')
+    plt.xlabel(x)
+    plt.ylabel(y)
+    plt.show()

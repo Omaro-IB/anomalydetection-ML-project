@@ -2,7 +2,7 @@ import pandas as pd
 from datetime import datetime
 
 
-def initialize_df(dir, index=None, drop=[], parse_dates=[]):  # initializes the data-frame
+def initialize_df(dir: object, index: object = None, drop: object = [], parse_dates: object = []) -> object:  # initializes the data-frame
     """
     Initializes Pandas dataframe from csv file
     :param dir: directory of csv file

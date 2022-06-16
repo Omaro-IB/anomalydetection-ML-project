@@ -1,21 +1,37 @@
 import data_exploration
 import graphing
+import train
+import matplotlib.pyplot as plt
+import pandas as pd
 
+#   ALL WEEKS
 # DATA
 data_frame = data_exploration.initialize_df("train.csv", index="timestamp", drop=["anomaly",
                                                                                   "building_id"])  # Timestamp index data-frame (Only meter-reading)
-data_frame_indexed = data_exploration.initialize_df("train.csv", drop=["anomaly", "building_id",
-                                                                       "timestamp"])  # Indexed data-frame (Only meter_reading)
-data_frame_indexed_anomaly = data_exploration.initialize_df("train.csv", drop=["building_id", "meter_reading",
-                                                                               "timestamp"])  # Indexed data-frame (meter-reading and anomaly)
+data_frame2 = data_exploration.initialize_df("train.csv", drop=["building_id"], parse_dates=["timestamp"]) #Data frame to be used for training
+# data_frame_indexed = data_exploration.initialize_df("train.csv", drop=["anomaly", "building_id","timestamp"])  # Indexed data-frame (Only meter_reading)
+# data_frame_indexed_anomaly = data_exploration.initialize_df("train.csv", drop=["building_id", "meter_reading","timestamp"])  # Indexed data-frame (meter-reading and anomaly)
 
+
+
+#   WEEK 2
+#TRAINING
+train_df, test_df = train.split(data_frame2, 0.8, seed=192881) #train-test 80% split
+#graphing.plot_scatter(train_df, "timestamp", "meter_reading") # plot data
+
+std_train_df = train.standardize_data(train_df, "meter_reading") #standardize data
+#graphing.plot_scatter(pd.DataFrame(std_train_df), "timestamp", "meter_reading") # plot standardized data
+
+
+
+#   WEEK 1
 # PACF Data
-PACFseries = data_frame_indexed[0:len(data_frame_indexed):500] #series data
-shortened_data_frame = data_frame[0:len(data_frame):500] #time data
+# PACFseries = data_frame_indexed[0:len(data_frame_indexed):500] #series data
+# shortened_data_frame = data_frame[0:len(data_frame):500] #time data
 
 # INTERPOLATE DATA AND EXPORT TO "train_inter.csv"
-data_frame_interpolated = data_frame_indexed.interpolate()  # interpolate
-data_frame_interpolated.to_csv("train_inter.csv")
+# data_frame_interpolated = data_frame_indexed.interpolate()  # interpolate
+# data_frame_interpolated.to_csv("train_inter.csv")
 
 # GRAPHING
 # graphing.graph_histogram(data_frame)  # graph regular distribution histogram of meter readings
