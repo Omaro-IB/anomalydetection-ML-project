@@ -26,6 +26,30 @@ def initialize_df(dir: object, index: object = None, drop: object = [], parse_da
         df = df.drop(d, axis=1)
     return df
 
+def create_missing_value_histogram_data(df, col, freq_col):
+    """
+    Creates a list with repeating column values n times where n = the number of times that value has NaN in freq_col
+    :param df: Data frame with two columns- one x axis column and one frequency column
+    :param col: The x axis column
+    :param freq_col:The frequency column
+    :return:List of column values * number of NaN's in freq_col
+    """
+    df = df[df[freq_col].isnull()] # drops all non-NaN rows
+    return df[col].tolist()
+
+def group_by_n(df, col):
+    """
+    Splits a dataframe into a dictionary with each key being the values in "col" column and values being the rows
+    :param df:Pandas DataFrame
+    :param col:String, name of column
+    :return:Dict, with keys of each value in column and values being the rows
+    """
+    keys = set(df[col].tolist())
+    dic = {}
+    for key in keys:
+        dic[key] = df[df[col] == key]
+    return dic
+
 def create_time_series(df, lag=False):
     """
     Creates a non-indexed Pandas Dataframe with either lag values as integers (from first date in days) or just the
@@ -49,53 +73,40 @@ def create_time_series(df, lag=False):
             time_column = pd.Series(dates_f)
     return time_column
 
-def create_lag_df(df, column, lag):
+def create_RFC_data(df, n, col):
     """
-    Creates a Pandas dataframe with a lag column
-    :param df:Pandas dataframe, with no index column, two columns of the same size
-    :param column:String, The column name to be lagged
-    :param lag:String, The other column name to be replaced with the  column
-    :return:Pandas DataFrame, with the lag column replaced with the column but lagged (shifted up by 1)
+    Takes Pandas DataFrame and turns into a DataFrame ready to process by RFC algorithm
+    :param df:Pandas DataFrame with timestamp column
+    :param n:Number of Lag Columns
+    :param col: Column to be lagged
+    :return:Pandas DataFrame with no index column, hour, weekday, and month column, and n lag columns of col column
     """
-    df[lag] = df[column]
-    df = df.rename(columns={column: 'lag2', lag: "lag1"})
-    df["lag1"] = df["lag1"].shift(-1)
-    return df[:-1]
+    RFC_df = pd.DataFrame({"hourOfDay":[],"dayOfWeek":[],"monthOfYear":[]})
+    RFC_df['hourOfDay']=pd.to_datetime(df["timestamp"]).dt.hour
+    RFC_df['dayOfWeek']=pd.to_datetime(df["timestamp"]).dt.dayofweek
+    RFC_df['monthOfYear']=pd.to_datetime(df["timestamp"]).dt.month
 
-def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
-    # transform a time series dataset into a supervised learning dataset
-    n_vars = 1 if type(data) is list else data.shape[1]
-    df = pd.DataFrame(data)
-    cols = list()
-    # input sequence (t-n, ... t-1)
-    for i in range(n_in, 0, -1):
-        cols.append(df.shift(i))
-    # forecast sequence (t, t+1, ... t+n)
-    for i in range(0, n_out):
-        cols.append(df.shift(-i))
-    # put it all together
-    agg = pd.concat(cols, axis=1)
-    # drop rows with NaN values
-    if dropnan:
-        agg.dropna(inplace=True)
-    return agg.values
 
-# def walk_forward_validation(train, test):
-#     predictions = list()
-#     # seed history with training dataset
-#     history = [x for x in train]
-#     # step over each time-step in the test set
-#     for i in range(len(test)):
-#         # split test row into input and output columns
-#         testX, testy = test[i, :-1], test[i, -1]
-#         # fit model on history and make a prediction
-#         yhat = train.random_forest_forecast(history, testX)
-#         # store forecast in list of predictions
-#         predictions.append(yhat)
-#         # add actual observation to history for the next loop
-#         history.append(test[i])
-#         # summarize progress
-#         print('>expected=%.1f, predicted=%.1f' % (testy, yhat))
-#     # estimate prediction error
-#     error = mean_absolute_error(test[:, -1], predictions)
-#     return error, test[:, 1], predictions
+    for lag in range(n+1):
+        if lag == 0:
+            RFC_df[col]=df[col]
+        else:
+            RFC_df["lag%s" %lag]=(df[col].shift(-lag))[:-lag]
+
+    RFC_df["anomaly"] = df["anomaly"]
+
+    return RFC_df
+
+
+    # def create_lag_df(df, column, lag):
+#     """
+#     Creates a Pandas dataframe with a lag column
+#     :param df:Pandas dataframe, with no index column, two columns of the same size
+#     :param column:String, The column name to be lagged
+#     :param lag:String, The other column name to be replaced with the column
+#     :return:Pandas DataFrame, with the lag column replaced with the column but lagged (shifted up by 1)
+#     """
+#     df[lag] = df[column]
+#     df = df.rename(columns={column: 'lag2', lag: "lag1"})
+#     df["lag1"] = df["lag1"].shift(-1)
+#     return df[:-1]

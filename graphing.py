@@ -29,21 +29,19 @@ def graph_histogram(df):
     :param df: Pandas Dataframe with 1 column: meter_reading
     :return:None
     """
-    hist_data = df["meter_reading"].tolist()
+    hist_data = data_exploration.create_missing_value_histogram_data(df, "building_id", "meter_reading")
     plt.hist(hist_data, bins=50)
     plt.show()
 
 
-def graph_pacf(series, time_data):
+def graph_pacf(df, lag):
     """
     Takes series and lag column and plots Partial Auto-correlation graph
-    :param series:Pandas dataframe with only 1 column: meter readings
-    :param time_data:Pandas dataframe with the index being the timestamps with format %y-%m-%d %H:%M:%S
+    :param df:Pandas dataframe with only 1 column: meter_reading
+    :param lag:Int, number of lags
     :return:None
     """
-    lag = data_exploration.create_time_series(time_data, lag=True)  # lag column data
-
-    plot_pacf(series["meter_reading"], lags=lag)
+    plot_pacf(df["meter_reading"], lags=lag)
     plt.show()
 
 
@@ -53,7 +51,8 @@ def graph_heatmap(df):
     :param df: Pandas data-frame with two columns: timestamp (index column) and meter-reading
     :return:None
     """
-    time_column = data_exploration.create_time_series(df[0:len(df):500])
+    # time_column = data_exploration.create_time_series(df[0:len(df):500])
+    time_column = data_exploration.create_time_series(df)
     time_lists = [
         [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
         [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
@@ -88,7 +87,7 @@ def plot_scatter(df, x, y):
     """
     x_data = getattr(df, x)
     y_data = getattr(df, y)
-    plt.scatter(x_data, y_data, color = 'blue')
+    plt.scatter(x_data, y_data, color='blue')
     plt.xlabel(x)
     plt.ylabel(y)
     plt.show()

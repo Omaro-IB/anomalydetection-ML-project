@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn import preprocessing
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
 
 
 def split(df, train_percentage, seed=None):
@@ -29,22 +30,3 @@ def standardize_data(df, column):
     col = preprocessing.StandardScaler().fit(col).transform(col)
     x[column] = col
     return x
-
-def random_forest_forecast(data):
-    def train_test_split(data, n_test):
-        return data[0:n_test], data[n_test:len(data)]
-
-    train, testx = train_test_split(data, int(len(data)*0.8))
-    print(train)
-    print(testx)
-
-    # transform list into array
-    train = np.asarray(train)
-    # split into input and output columns
-    trainX, trainy = train[:, :-1], train[:, -1]
-    # fit model
-    model = RandomForestRegressor(n_estimators=1000)
-    model.fit(trainX, trainy)
-    # make a one-step prediction
-    yhat = model.predict(testx[:, :3])
-    return yhat[0]
