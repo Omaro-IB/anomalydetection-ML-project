@@ -73,7 +73,7 @@ def create_time_series(df, lag=False):
             time_column = pd.Series(dates_f)
     return time_column
 
-def create_RFC_data(df, n, col):
+def create_RF_data(df, n, col):
     """
     Takes Pandas DataFrame and turns into a DataFrame ready to process by RFC algorithm
     :param df:Pandas DataFrame with timestamp column
