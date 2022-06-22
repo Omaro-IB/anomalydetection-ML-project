@@ -1,70 +1,76 @@
 import data_exploration
 import graphing
+import train
+import anomaly_predictor
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error
-from sklearn import metrics
-
-
-#   ALL WEEKS
-# DATA
-data_frame = data_exploration.initialize_df("train.csv")  # Dataframe with everything- no index
-grouped_df = data_exploration.group_by_n(data_frame, "building_id")  # Dictionary of DF's grouped by building_id
 BUILDING_ID = 1241  # 1278
 
+if __name__ == "__main__":
+    print(anomaly_predictor.predictor(22,2,1,360,"models",10))
 
-#   WEEK 1
-# INTERPOLATE DATA AND EXPORT TO "train_inter.csv"
-grouped_df_inter = {}
-for key in grouped_df:
-    x = grouped_df[key].interpolate()
-    grouped_df_inter[key] = x
-    # x.to_csv("interpolated-by-building_id\\"+str(key)+"_inter.csv") #exports to csv (only needs to run once)
+    # Interpolate Data and Export to "train_inter.csv" (only needs to run once)
+    # grouped_df_inter = train.interpolate_data_split("building_id", "train.csv", dir2 = "interpolated-by-building_id")
 
-
-#   WEEK 2
-# TRAINING: Random Forest Classifier
-# df_RFC = data_exploration.create_RF_data(grouped_df_inter[BUILDING_ID].dropna(), 0, "meter_reading")  # Create proper RFC data
-# X=df_RFC[['hourOfDay', 'dayOfWeek', 'monthOfYear', 'meter_reading']]  # Features
-# y=df_RFC['anomaly']  # Labels
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2) # 80% training and 20% test
-# clf=RandomForestClassifier()  # Create a Gaussian Classifier
-# clf.fit(X_train,y_train)  # Train the model using the training sets y_pred=clf.predict(X_test)
-# y_pred=clf.predict(X_test)  # Predict
-# print(y_pred)
-# print("Accuracy:",metrics.accuracy_score(y_test, y_pred))  # Model Accuracy, how often is the classifier correct?
-
-# TRAINING: Random Forest Regressor
-df_RFR = data_exploration.create_RF_data(grouped_df_inter[BUILDING_ID].dropna(), 0, "meter_reading")  # Create proper RFR data
-x = df_RFR.iloc[:, :-1]
-y = df_RFR.iloc[:, -1:]
-regressor = RandomForestRegressor(n_estimators = 1000, random_state = 0)
-regressor.fit(x, y)
-# The Data Features to Predict from (hour, day, month, and meter_reading) of that particular BUILDING_ID
-features = [22, 2, 1, 359.805]
-Y_pred = regressor.predict(np.array(features).reshape(1, 4))  # test the output by changing values
-if Y_pred < 0.5:
-    print("Not Anomaly ("+str(100-(Y_pred[0]*100))+"% confidence)")
-else:
-    print("Anomaly ("+str(Y_pred[0]*100)+"% confidence)")
+    # Interpolate Data but don't export
+    # grouped_df_inter = train.interpolate_data_split("building_id", "train.csv")
+    # features = [22, 2, 1, 360]  # [hourOfDay, dayOfWeek, monthOfYear, meter_reading]
 
 
+    # TRAINING: Random Forest Classifier (tuned hyper-parameters)
+    # X_test, y_test, RFC_model = train.random_forest_classifier(grouped_df_inter[BUILDING_ID], hyper_param={'n_estimators': 2000, 'bootstrap': False, 'max_depth': None, 'max_features': 1.0, 'min_samples_leaf': 1, 'min_samples_split': 2})
+    # print(train.predict(RFC_model, features, show=True))
+    # acc = train.accuracy(y_test, RFC_model.predict(X_test))
+    # print(acc)
 
-# GRAPHING
-# Histogram
-# graphing.graph_histogram(data_frame)  # graph bar chart, x-axis = building ids, y-axis = no. of NaNs
 
-# Anomaly Graph
-# print(graphing.graph_anomaly_histogram(data_frame_indexed_anomaly))  # print anomaly ratio + graph anomaly distribution
+    # TRAINING: Random Forest Regressor (tuned hyper-parameters)
+    # X_test, y_test, RFR_model = train.random_forest_regressor(grouped_df_inter[BUILDING_ID], hyper_param={'n_estimators': 2000, 'bootstrap': False, 'max_depth': None, 'max_features': 1.0, 'min_samples_leaf': 1, 'min_samples_split': 2})
+    # print(train.predict(RFR_model, features, show=True))
+    # acc = train.accuracy(y_test, RFC_model.predict(X_test))
+    # print(acc)
 
-# PACF Graph
-# graphing.graph_pacf(grouped_df_inter[BUILDING_ID].dropna(), 8)  # graphs PACF graph
 
-# Heatmap
-# heatmap_df = grouped_df_inter[BUILDING_ID]
-# heatmap_df = heatmap_df.set_index("timestamp")
-# graphing.graph_heatmap(heatmap_df)
+    # CREATE MODELS FOR USE WITH ANOMALY PREDICTOR (takes ~30 mins to run)
+    # for i in grouped_df_inter:
+    #     X_test, y_test, RFR_model = train.random_forest_regressor(grouped_df_inter[i].dropna(), hyper_param={'n_estimators': 2000, 'bootstrap': False, 'max_depth': None, 'max_features': 1.0, 'min_samples_leaf': 1, 'min_samples_split': 2})
+    #     print(train.predict(RFR_model, features, show=True))
+    #     train.save_model(RFR_model, "models\\model"+str(i))
+
+
+    # TUNING HYPER-PARAMETERS (takes hours to run)
+    # def create_model(hp):
+    #     x, y, z = train.random_forest_regressor(grouped_df_inter[BUILDING_ID], hyper_param=hp)
+    #     return z
+    #
+    # def create_model2(hp):
+    #     x, y, z = train.random_forest_classifier(grouped_df_inter[BUILDING_ID], hyper_param=hp)
+    #     return z
+
+    # param_grid = {
+    #     'bootstrap': [True, False],
+    #     'max_depth': [80, 90, 100, 110, None],
+    #     'max_features': [1.0, "sqrt", "log2"],
+    #     'min_samples_leaf': [1, 3, 4, 5],
+    #     'min_samples_split': [2, 8, 10, 12],
+    #     'n_estimators': [100, 200, 1000, 2000]
+    # }
+    # print(train.tune_hp(create_model, features, 1, param_grid))
+    # print(train.tune_hp(create_model2, features, 1, param_grid))
+
+
+    # GRAPHING
+    # data_frame = data_exploration.initialize_df("train.csv")  # Dataframe for graphing
+    # Histogram
+    # graphing.graph_histogram(data_frame)  # graph bar chart, x-axis = building ids, y-axis = no. of NaNs
+
+    # Anomaly Graph
+    # print(graphing.graph_anomaly_histogram(data_frame_indexed_anomaly))  # print anomaly ratio + graph anomaly distribution
+
+    # PACF Graph
+    # graphing.graph_pacf(grouped_df_inter[BUILDING_ID].dropna(), 8)  # graphs PACF graph
+
+    # Heatmap
+    # heatmap_df = grouped_df_inter[BUILDING_ID]
+    # heatmap_df = heatmap_df.set_index("timestamp")
+    # graphing.graph_heatmap(heatmap_df)

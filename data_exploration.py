@@ -3,38 +3,39 @@ from datetime import datetime
 from sklearn.metrics import mean_absolute_error
 
 
-def initialize_df(dir: object, index: object = None, drop: object = [], parse_dates: object = []) -> object:  # initializes the data-frame
+def initialize_df(dir_, index=None, drop=None, parse_dates=None):  # initializes the data-frame
     """
     Initializes Pandas dataframe from csv file
-    :param dir: directory of csv file
+    :param dir_: directory of csv file
     :param index:The index column, default is None (will simply use no index column)
-    :param drop:List of column names to drop, default is empty list []
-    :param parse_dates:List of column names with lists in them to parse, default is empty list []
+    :param drop:List of column names to drop, default is None
+    :param parse_dates:List of column names with lists in them to parse, default is None
     :return:Pandas Dataframe
     """
-    if index == None:
-        if parse_dates == []:
-            df = pd.read_csv(dir)
+    if index is None:
+        if parse_dates is None:
+            df = pd.read_csv(dir_)
         else:
-            df = pd.read_csv(dir, parse_dates=parse_dates)
+            df = pd.read_csv(dir_, parse_dates=parse_dates)
     else:
-        if parse_dates == []:
-            df = pd.read_csv(dir, index_col=index)
+        if parse_dates is None:
+            df = pd.read_csv(dir_, index_col=index)
         else:
-            df = pd.read_csv(dir, index_col=index, parse_dates=parse_dates)
-    for d in drop:
-        df = df.drop(d, axis=1)
+            df = pd.read_csv(dir_, index_col=index, parse_dates=parse_dates)
+    if drop is not None:
+        for d in drop:
+            df = df.drop(d, axis=1)
     return df
 
 def create_missing_value_histogram_data(df, col, freq_col):
     """
-    Creates a list with repeating column values n times where n = the number of times that value has NaN in freq_col
-    :param df: Data frame with two columns- one x axis column and one frequency column
-    :param col: The x axis column
+    Creates a list with repeating column values n times, where n = the number of times that value has NaN in freq_col
+    :param df: Data frame with two columns- one x-axis column and one frequency column
+    :param col: The x-axis column
     :param freq_col:The frequency column
     :return:List of column values * number of NaN's in freq_col
     """
-    df = df[df[freq_col].isnull()] # drops all non-NaN rows
+    df = df[df[freq_col].isnull()]  # drops all non-NaN rows
     return df[col].tolist()
 
 def group_by_n(df, col):
@@ -81,24 +82,23 @@ def create_RF_data(df, n, col):
     :param col: Column to be lagged
     :return:Pandas DataFrame with no index column, hour, weekday, and month column, and n lag columns of col column
     """
-    RFC_df = pd.DataFrame({"hourOfDay":[],"dayOfWeek":[],"monthOfYear":[]})
-    RFC_df['hourOfDay']=pd.to_datetime(df["timestamp"]).dt.hour
-    RFC_df['dayOfWeek']=pd.to_datetime(df["timestamp"]).dt.dayofweek
-    RFC_df['monthOfYear']=pd.to_datetime(df["timestamp"]).dt.month
-
+    RFC_df = pd.DataFrame({"hourOfDay": [], "dayOfWeek": [], "monthOfYear": []})
+    RFC_df['hourOfDay'] = pd.to_datetime(df["timestamp"]).dt.hour
+    RFC_df['dayOfWeek'] = pd.to_datetime(df["timestamp"]).dt.dayofweek
+    RFC_df['monthOfYear'] = pd.to_datetime(df["timestamp"]).dt.month
 
     for lag in range(n+1):
         if lag == 0:
-            RFC_df[col]=df[col]
+            RFC_df[col] = df[col]
         else:
-            RFC_df["lag%s" %lag]=(df[col].shift(-lag))[:-lag]
+            RFC_df["lag%s" % lag] = (df[col].shift(-lag))[:-lag]
 
     RFC_df["anomaly"] = df["anomaly"]
 
     return RFC_df
 
 
-    # def create_lag_df(df, column, lag):
+# def create_lag_df(df, column, lag):
 #     """
 #     Creates a Pandas dataframe with a lag column
 #     :param df:Pandas dataframe, with no index column, two columns of the same size
