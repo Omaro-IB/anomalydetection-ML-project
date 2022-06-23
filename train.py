@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics
 import data_exploration
 import pickle
+import pandas as pd
 
 
 # def split(df, train_percentage, seed=None):
@@ -50,6 +51,10 @@ def interpolate_data_split(col, dir1, dir2=""):
 
     for key in grouped_df:
         x = grouped_df[key].interpolate()
+        # if lag:
+        #     for l in range(1, lag + 1):
+        #         x["lag%s" % l] = (x["meter_reading"].shift(-l))[:-l]
+        #         x = x[[c for c in x if c != 'anomaly']+['anomaly']]
         grouped_df_inter[key] = x
         if dir2 != "":
             x.to_csv(dir2+"\\"+str(key)+"_inter.csv")  # exports to csv
@@ -81,8 +86,11 @@ def random_forest_regressor(df, hyper_param={'bootstrap': True,'max_depth': None
     :param hyper_param: Dict: bootstrap,max_depth,max_features,min_samples_leaf,min_samples_split,n_estimators
     :return: X_test, y_test, random forest model
     """
-    df_RFR = data_exploration.create_RF_data(df, 0, "meter_reading")  # Create proper RFR data
-    X = df_RFR[['hourOfDay', 'dayOfWeek', 'monthOfYear', 'meter_reading']]  # Features
+    df_RFR = data_exploration.create_RF_data(df, 3, "meter_reading")  # Create proper RFR data
+
+    df_RFR.dropna(axis=0, how='any', inplace=True)
+
+    X = df_RFR[['hourOfDay', 'dayOfWeek', 'monthOfYear', 'meter_reading', 'lag1', 'lag2', 'lag3']]  # Features
     y = df_RFR['anomaly']  # Labels
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)  # 80% training and 20% test
     # x = df_RFR.iloc[:, :-1]
@@ -102,11 +110,11 @@ def predict(model, features, show=False):
     """
     Predicts using given features
     :param model: The model to predict with
-    :param features: List, with 4 elements of features
+    :param features: List, with elements of features
     :param show: Boolean, If True, print anomaly/not anomaly with % confidence, default = False
     :return: Y_pred, value between 0 (not anomaly) and 1 (anomaly)
     """
-    Y_pred = model.predict(np.array(features).reshape(1, 4))  # test the output by changing values
+    Y_pred = model.predict(np.array(features).reshape(1, len(features)))  # test the output by changing values
     if show:
         if Y_pred < 0.5:
             print("Not Anomaly ("+str(100-(Y_pred[0]*100))+"% confidence)")
@@ -121,7 +129,10 @@ def accuracy(test_set, prediction_set):
     :param prediction_set: The prediction set
     :return: Float , Accuracy
     """
-    return metrics.accuracy_score(test_set, prediction_set)
+    try:
+        return metrics.accuracy_score(test_set, prediction_set)
+    except ValueError:
+        return metrics.mean_absolute_error(test_set, prediction_set)
 
 def tune_hp(func, features, target, param_grid):
     """
