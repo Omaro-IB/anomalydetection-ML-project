@@ -9,8 +9,16 @@
 import anomaly_predictor
 import tkinter as tk
 import tkinter.filedialog
+from os import listdir
+import pickle
 
 BUILDING_ID = 1278  # 1278
+listOfModels = []
+listOfFiles = listdir("models")
+print("Loading models...")
+for file_ in listOfFiles:
+    listOfModels.append(pickle.load(open("models\\"+file_, 'rb')))
+print("Loaded models")
 
 root = tk.Tk()
 
@@ -18,7 +26,7 @@ def func():
     n = int(nEntry.get())
     root.destroy()
     for file in Q:
-        anomaly_predictor.processCSV(file, "timestamp", "value", n)
+        anomaly_predictor.processCSV(file, "timestamp", "value", listOfModels, n)
 def askopenfile(Q):
     Q.append(tk.filedialog.askopenfile(mode='r').name)
     queue.delete(0,tk.END)
