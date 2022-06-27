@@ -62,9 +62,9 @@ class DataFrameWin(Window):
             raise ValueError("Invalid mode- valid options: 'drop','format_dates'")
 
     def create_lag(self, n, col):
-        for lag in range(1,n+1):
+        for lag in range(1, n+1):
             self.df["lag%s" % lag] = (self.df[col].shift(lag))[lag:]
-        self.nlags+=n
+        self.nlags += n
 
     def interpolate_missing_rows(self):
         self.df = self.df.interpolate()
@@ -185,7 +185,7 @@ class TrainingWin(Window):
             groundTruthCol = np.asarray(DataFrameWin_temp.df[valueCol])
             std = DataFrameWin_temp.df[valueCol].std()
             colNames = ["hourOfDay", "dayOfWeek", "monthOfYear"]
-            for i in range (1, self.DataFrameWin.nlags+1):
+            for i in range(1, self.DataFrameWin.nlags+1):
                 colNames.append("lag" + str(i))
             predDF = DataFrameWin_temp.df[colNames]
 

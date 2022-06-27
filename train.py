@@ -59,5 +59,3 @@ def tune_hp_rec(func, x):
             return tune_hp_rec(func, x[:len(x) // 2])
         else:
             return tune_hp_rec(func, x[len(x) // 2:])
-
-
