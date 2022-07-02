@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 import pickle
 import numpy as np
 import warnings
+from dash import dcc
 
 import graphing
 import train
@@ -13,7 +14,24 @@ import train
 
 class Window:
     def __init__(self):
-        pass
+        self.name = "Graph"
+        self.df = None
+
+    def display(self, type):
+        if self.df is None:
+            raise ValueError("Cannot display DataFrame- self.df has not been initialized")
+        return dcc.Graph(
+            id='graph-win',
+            figure={
+                'data': [
+                    {'x': self.df["timestamp"], 'y': self.df["value"], 'type': type, 'name': self.name},
+                ],
+                'layout': {
+                    'title': self.name
+                }
+            }
+        )
+
 
 class DataFrameWin(Window):
     """
@@ -21,6 +39,7 @@ class DataFrameWin(Window):
     """
 
     def __init__(self, df=None, csv_file=None, drop_columns=None, parse_dates=None):
+        super().__init__()
         if df is not None:
             self.df = df
         elif csv_file is not None:
@@ -28,11 +47,10 @@ class DataFrameWin(Window):
         else:
             raise ValueError("At least one of 'df' or 'init_directory' must be initialized")
 
+        self.name = (csv_file.split("\\")[-1]).replace(".csv", '')
         self.dates_formatted = False
         self.show_all = False
         self.nlags = 0
-
-        super().__init__()
 
     def modify(self, mode, value):
         # mode = "drop" ^ "format_dates"
@@ -47,7 +65,7 @@ class DataFrameWin(Window):
             insertLoc = self.df.columns.get_loc(value)
 
             cols = (list(self.df.columns))
-            del cols[insertLoc]
+            # del cols[insertLoc]
             cols = cols[:insertLoc] + ["hourOfDay", "dayOfWeek", "monthOfYear"] + cols[insertLoc:]
 
             newDF = pd.DataFrame(columns=cols)
@@ -106,6 +124,7 @@ class GraphWin(Window):
     def __init__(self, DataFrameWin):
         super().__init__()
         self.DataFrameWin = DataFrameWin
+        self.name = self.DataFrameWin.name
 
     def export_DF(self):
         return self.DataFrameWin
@@ -116,17 +135,19 @@ class GraphWin(Window):
             # x = x-axis, y = frequency
             plt.hist(data_exploration.create_missing_value_histogram_data(self.DataFrameWin.df, x, y), bins=50)
             plt.show()
+            return dcc.Graph(id='example-graph',figure={'data': [{'x': "Open in External Window", 'y': [0], 'type': 'bar', 'name': "Open in External Window"}],'title': "Open in External Window"})
         elif mode == "pacf":
             # x = x axis, y = x-scale (int)
             plot_pacf(self.DataFrameWin.df.dropna()[x], lags=y)
             plt.show()
+            return dcc.Graph(id='example-graph',figure={'data': [{'x': "Open in External Window", 'y': [0], 'type': 'bar', 'name': "Open in External Window"}],'title': "Open in External Window"})
         elif mode == "heatmap":
             # x = value column, y = None
             if not self.DataFrameWin.dates_formatted:
                 raise ValueError("Incompatible DataFrameWin with this graph- dates must be formatted first- try "
                                  "DataFrameWin.modify('format_dates', time_col)")
             else:
-                graphing.graph_heatmap(self.DataFrameWin.df, "dayOfWeek", "hourOfDay", x)
+                return graphing.graph_heatmap(self.DataFrameWin.df, "dayOfWeek", "hourOfDay", x)
         else:
             raise ValueError("Invalid mode- valid options: 'missing-values', 'pacf', 'heatmap'")
 
@@ -138,6 +159,7 @@ class TrainingWin(Window):
         self.X_train, self.X_test, self.y_train, self.y_test = None, None, None, None
         self.hyper_param = None
         self.model = None
+        self.name = self.DataFrameWin.name
 
     def export_DF(self):
         return self.DataFrameWin
@@ -149,7 +171,7 @@ class TrainingWin(Window):
         y = newDF[y_attr]  # Label
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=test_size)
 
-    def tune_hps(self, param_grid):  # TODO: finish this and continue from "changes.txt"
+    def tune_hps(self, param_grid):
         if self.X_train is None or self.X_test is None or self.y_train is None or self.y_test is None:
             raise ValueError("Data has not yet been train-test-split- try TrainingWin.split(x_attrs, y_attr, test_size)")
         else:

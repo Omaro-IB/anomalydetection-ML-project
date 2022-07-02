@@ -36,4 +36,4 @@ def graph_heatmap(df, dayOfWeek, hourOfDay, value):
     heatmap_data = np.array(heatmap_data)
     heatmap_dataframe = pd.DataFrame(heatmap_data)
     fig = px.imshow(heatmap_dataframe, text_auto=True)
-    fig.show()
+    return fig
